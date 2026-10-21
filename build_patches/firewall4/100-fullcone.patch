@@ -32,7 +32,7 @@ index d6333f1..e7d0f19 100644
  	}
  
 diff --git a/root/usr/share/ucode/fw4.uc b/root/usr/share/ucode/fw4.uc
-index 47e86cd..f18aac5 100644
+index 47e86cd..955ac46 100644
 --- a/root/usr/share/ucode/fw4.uc
 +++ b/root/usr/share/ucode/fw4.uc
 @@ -1865,6 +1865,7 @@ return {
@@ -43,7 +43,24 @@ index 47e86cd..f18aac5 100644
  			input: [ "policy", "drop" ],
  			output: [ "policy", "drop" ],
  			forward: [ "policy", "drop" ],
-@@ -2126,6 +2127,8 @@ return {
+@@ -1899,6 +1900,16 @@ return {
+ 
+ 		delete defs.syn_flood;
+ 
++		if (defs.fullcone) {
++			let probe = 'add table inet fw4_fullcone_probe; ' +
++				'add chain inet fw4_fullcone_probe srcnat { type nat hook postrouting priority srcnat; policy accept; meta nfproto ipv4 fullcone; }; ' +
++				'add chain inet fw4_fullcone_probe dstnat { type nat hook prerouting priority dstnat; policy accept; meta nfproto ipv4 fullcone; };';
++			if (system(`/usr/sbin/nft -c '${replace(probe, "'", "'\\''")}' 2>/dev/null`) != 0) {
++				this.warn('nft fullcone unavailable; retaining ordinary masquerade');
++				defs.fullcone = false;
++			}
++		}
++
+ 		this.state.defaults = defs;
+ 	},
+ 
+@@ -2126,6 +2137,8 @@ return {
  
  		if (zone.masq || zone.masq6)
  			zone.dflags.snat = true;
