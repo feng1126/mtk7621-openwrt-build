@@ -1,4 +1,4 @@
-# Newifi D2 Linux 5.10 GitHub Actions build
+# MT7621 OpenWrt build (Newifi D2, Linux 5.10)
 
 This project builds a **D-Team Newifi D2 (MT7621)** image from pinned
 `coolsnowwolf/lede` commit `07cebbcf28f61637047645c3fedc829ee9cc3688`.
@@ -23,6 +23,10 @@ block mounting and 6in4. The ddnsto and socat LuCI packages are included
 in `local_packages/`; the first-boot defaults select Argon and Chinese.
 The ZeroTier LuCI package also comes from CMCC3000 and includes its
 LAN-to-ZeroTier forwarding switch.
+The build also selects Lean's `kmod-nft-fullcone` and `luci-app-turboacc`.
+The Turbo ACC package is copied from the pinned Lean feed with a small UI
+change that presents only the nftables IPv4 Full Cone NAT mode; the
+Broadcom-only mode is hidden.
 
 The router's live configuration contains credentials, a ZeroTier identity,
 and network-specific settings. These are **not committed or embedded in the
