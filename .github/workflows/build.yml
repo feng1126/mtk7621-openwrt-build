@@ -49,6 +49,8 @@ jobs:
           cp -a "$GITHUB_WORKSPACE/hnat_overlay/." openwrt/
           mkdir -p openwrt/package/libs/libnftnl/patches openwrt/package/network/utils/nftables/patches openwrt/package/network/config/firewall4/patches
           cp "$GITHUB_WORKSPACE"/build_patches/libnftnl/*.patch openwrt/package/libs/libnftnl/patches/
+          # The fullcone patch edits Makefile.am; regenerate Autotools files together.
+          sed -i '/^PKG_BUILD_PARALLEL:=1$/a PKG_FIXUP:=autoreconf' openwrt/package/libs/libnftnl/Makefile
           cp "$GITHUB_WORKSPACE"/build_patches/nftables/*.patch openwrt/package/network/utils/nftables/patches/
           cp "$GITHUB_WORKSPACE"/build_patches/firewall4/*.patch openwrt/package/network/config/firewall4/patches/
           mkdir -p openwrt/package/newifi
