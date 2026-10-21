@@ -1,0 +1,225 @@
+--- a/target/linux/ramips/dts/mt7621.dtsi
++++ b/target/linux/ramips/dts/mt7621.dtsi
+@@ -438,26 +438,34 @@
+ 		clock-names = "nfi_clk";
+ 	};
+ 
++	ethsys: ethsys@1e000000 {
++		compatible = "mediatek,mt7621-ethsys", "syscon";
++		reg = <0x1e000000 0x8000>;
++	};
++
+ 	ethernet: ethernet@1e100000 {
+-		compatible = "mediatek,mt7621-eth";
++		compatible = "mediatek,mt7621-eth","syscon";
+ 		reg = <0x1e100000 0x10000>;
++
+ 
+ 		clocks = <&sysclock>;
+ 		clock-names = "ethif";
+ 
++
+ 		#address-cells = <1>;
+-		#size-cells = <0>;
+-
+-		resets = <&rstctrl 6 &rstctrl 23>;
++		#size-cells = <1>;
++
++		resets = <&rstctrl 6>, <&rstctrl 23>;
+ 		reset-names = "fe", "eth";
+ 
+ 		interrupt-parent = <&gic>;
+ 		interrupts = <GIC_SHARED 3 IRQ_TYPE_LEVEL_HIGH>;
+ 
+-		mediatek,ethsys = <&sysc>;
++		mediatek,ethsys = <&ethsys>;
+ 
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&mdio_pins>, <&rgmii1_pins>, <&rgmii2_pins>;
++
+ 
+ 		gmac0: mac@0 {
+ 			compatible = "mediatek,eth-mac";
+@@ -474,8 +482,13 @@
+ 		gmac1: mac@1 {
+ 			compatible = "mediatek,eth-mac";
+ 			reg = <1>;
+-			status = "disabled";
+-			phy-mode = "rgmii-rxid";
++			phy-mode = "rgmii";
++
++			fixed-link {
++				speed = <1000>;
++				full-duplex;
++				pause;
++			};
+ 		};
+ 
+ 		mdio: mdio-bus {
+@@ -541,6 +554,28 @@
+ 				};
+ 			};
+ 		};
++
++	};
++
++	gsw: gsw {
++		compatible = "mediatek,mt753x";
++		mt7530,direct-phy-access;
++		interrupt-parent = <&gic>;
++		interrupts = <GIC_SHARED 23 IRQ_TYPE_LEVEL_HIGH>;
++
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
++
++
++	hnat: hnat@1e100000 {
++		compatible = "mediatek,mtk-hnat_v1";
++		reg = <0x1e100000 0x3000>;
++
++		resets = <&ethsys 0>;
++		reset-names = "mtketh";
++
++		status = "disabled";
+ 	};
+ 
+ 	pcie: pcie@1e140000 {
+--- a/target/linux/ramips/dts/mt7621_d-team_newifi-d2.dts
++++ b/target/linux/ramips/dts/mt7621_d-team_newifi-d2.dts
+@@ -153,35 +153,21 @@
+ 	nvmem-cell-names = "mac-address";
+ };
+ 
++&gsw {
++	mediatek,portmap = "llllw";
++	status = "okay";
++};
++
++&hnat {
++	mtketh-wan = "eth0.2";
++	mtketh-ppd = "eth0.1";
++	mtketh-lan = "eth0";
++	mtketh-max-gmac = <1>;
++	status = "okay";
++};
++
+ &switch0 {
+-	ports {
+-		port@0 {
+-			status = "okay";
+-			label = "lan4";
+-		};
+-
+-		port@1 {
+-			status = "okay";
+-			label = "lan3";
+-		};
+-
+-		port@2 {
+-			status = "okay";
+-			label = "lan2";
+-		};
+-
+-		port@3 {
+-			status = "okay";
+-			label = "lan1";
+-		};
+-
+-		port@4 {
+-			status = "okay";
+-			label = "wan";
+-			nvmem-cells = <&macaddr_factory_e006>;
+-			nvmem-cell-names = "mac-address";
+-		};
+-	};
++	status = "disabled";
+ };
+ 
+ &state_default {
+--- a/target/linux/ramips/mt7621/config-5.10
++++ b/target/linux/ramips/mt7621/config-5.10
+@@ -185,9 +185,9 @@
+ CONFIG_NET_DSA_MT7530=y
+ CONFIG_NET_DSA_TAG_MTK=y
+ CONFIG_NET_FLOW_LIMIT=y
+-CONFIG_NET_MEDIATEK_SOC=y
++# CONFIG_NET_MEDIATEK_SOC is not set
+ CONFIG_NET_SWITCHDEV=y
+-CONFIG_NET_VENDOR_MEDIATEK=y
++# CONFIG_NET_VENDOR_MEDIATEK is not set
+ # CONFIG_NET_VENDOR_RALINK is not set
+ CONFIG_NO_HZ_COMMON=y
+ CONFIG_NO_HZ_IDLE=y
+@@ -292,3 +292,10 @@
+ CONFIG_XPS=y
+ CONFIG_ZLIB_DEFLATE=y
+ CONFIG_ZLIB_INFLATE=y
++
++CONFIG_MT753X_GSW=y
++CONFIG_NET_VENDOR_MEDIATEK_SDK=y
++CONFIG_NET_MTKSDK=y
++CONFIG_NET_MEDIATEK_HNAT=m
++CONFIG_SWCONFIG=y
++CONFIG_SWCONFIG_LEDS=y
+--- a/target/linux/ramips/modules.mk
++++ b/target/linux/ramips/modules.mk
+@@ -133,3 +133,15 @@
+ endef
+ 
+ $(eval $(call KernelPackage,sound-mt7620))
++
++# SDK HNAT test image for MT7621; module is autoloaded after Ethernet.
++define KernelPackage/mtk-hnat
++  SUBMENU:=Network Devices
++  TITLE:=MediaTek MT7621 SDK HW NAT
++  DEPENDS:=@TARGET_ramips_mt7621 +kmod-nf-conntrack +kmod-nf-flow
++  KCONFIG:=CONFIG_NET_MEDIATEK_HNAT=m CONFIG_BRIDGE_NETFILTER=y CONFIG_NETFILTER_FAMILY_BRIDGE=y
++  FILES:=$(LINUX_DIR)/drivers/net/ethernet/mediateksdk/mtk_hnat/mtkhnat.ko
++  AUTOLOAD:=$(call AutoLoad,55,mtkhnat)
++endef
++
++$(eval $(call KernelPackage,mtk-hnat))
+--- a/target/linux/ramips/mt7621/base-files/etc/board.d/02_network
++++ b/target/linux/ramips/mt7621/base-files/etc/board.d/02_network
+@@ -109,6 +109,10 @@
+ 		ucidef_set_interface_lan "lan1 lan2 lan3 lan4"
+ 		ucidef_set_interface "qtn" ifname "eth1" protocol "static" ipaddr "1.1.1.1" netmask "255.255.255.0"
+ 		;;
++	d-team,newifi-d2)
++		ucidef_add_switch "switch0" \
++			"0:lan:4" "1:lan:3" "2:lan:2" "3:lan:1" "4:wan:5" "6@eth0"
++		;;
+ 	*)
+ 		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3 lan4" "wan"
+ 		;;
+@@ -146,6 +150,10 @@
+ 		local index="$(find_mtd_index "board_data")"
+ 		wan_mac="$(grep -m1 mac= "/dev/mtd${index}" | cut -d= -f2)"
+ 		lan_mac=$wan_mac
++		;;
++	d-team,newifi-d2)
++		lan_mac=$(cat /sys/class/net/eth0/address)
++		wan_mac=$(mtd_get_mac_binary factory 0xe006)
+ 		;;
+ 	dlink,dir-860l-b1)
+ 		lan_mac=$(mtd_get_mac_ascii factory lanmac)
+--- a/target/linux/ramips/image/mt7621.mk
++++ b/target/linux/ramips/image/mt7621.mk
+@@ -534,13 +534,14 @@
+ TARGET_DEVICES += dual-q_h721
+ 
+ define Device/d-team_newifi-d2
+-  $(Device/dsa-migration)
++  DEVICE_COMPAT_VERSION := 2.0
++  DEVICE_COMPAT_MESSAGE := HNAT SDK image uses swconfig; do not preserve a DSA network configuration.
+   $(Device/uimage-lzma-loader)
+   IMAGE_SIZE := 32448k
+   DEVICE_VENDOR := Newifi
+   DEVICE_MODEL := D2
+   DEVICE_PACKAGES := kmod-mt7603e kmod-mt76x2e mt_wifi \
+-	luci-app-mtwifi kmod-usb3 kmod-usb-ledtrig-usbport
++	luci-app-mtwifi kmod-mtk-hnat kmod-usb3 kmod-usb-ledtrig-usbport
+ endef
+ TARGET_DEVICES += d-team_newifi-d2
+ 

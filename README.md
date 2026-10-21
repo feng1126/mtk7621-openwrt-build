@@ -17,8 +17,8 @@ device testing before flashing.
 The image selects firewall4, nftables flow offloading, the LEDE nft-fullcone
 kernel/userspace port, and a LuCI Turbo ACC page adapted for firewall4. IPv4
 full-cone NAT is controlled by the Turbo ACC switch and is off by default.
-Official 22.03 already has MediaTek PPE hardware flow offloading for MT7621;
-Turbo ACC exposes this through the flow-offloading hardware switch. The LEDE
+The main branch uses official MediaTek PPE hardware flow offloading for MT7621;
+Turbo ACC exposes this through the flow-offloading hardware switch. On main, the LEDE
 `mtkhnat.ko` driver is not included: it replaces the official MT7621
 Ethernet/switch stack and Newifi D2 device tree, so a module-only transplant
 would break LAN/WAN. Turbo ACC only shows the separate MediaTek HNAT option
@@ -35,3 +35,15 @@ The public build does not include the router's credentials or ZeroTier
 identity. A separate private repository supplies the ddnsto token and
 ZeroTier network ID through an Actions secret; it generates a new ZeroTier
 identity after flashing. The old firewall configuration is not copied.
+
+
+## SDK HNAT experimental branch
+
+The `hnat-experimental` branch applies the MediaTek SDK Ethernet/HNAT stack
+from `feng1126/openwrt` to the pinned official 22.03 source, then adds Lean's
+link-down FOE table cleanup. It retains the vendor MT7603E/MT7612E Wi-Fi
+packages and Turbo ACC controls. The MT753X switch uses swconfig, while the
+main branch uses DSA. The experimental image has compatibility version 2.0
+to prevent keeping a DSA network configuration through sysupgrade. It is an
+artifact for serial-console/LAN/WAN/PPPoE validation; compilation alone does
+not establish that the ports or network work. The main branch remains DSA.
