@@ -14,6 +14,21 @@ The workflow checks configuration and image generation. It does **not**
 validate Wi-Fi, Ethernet, NAT or configuration preservation on hardware.
 Do not flash an image until the build succeeds and the image is reviewed.
 
+## Software matched to the current router
+
+The package list follows the installed software on Newifi D2 at
+`192.168.10.20`: vendor Wi-Fi, HNAT, ddnsto, SmartDNS, socat, ZeroTier,
+their available LuCI applications, Chinese LuCI translations, Argon,
+block mounting and 6in4. The ddnsto and socat LuCI packages are included
+in `local_packages/`; the first-boot defaults select Argon and Chinese.
+
+The router's live configuration contains credentials, a ZeroTier identity,
+and network-specific settings. These are **not committed or embedded in the
+public firmware**. A private sysupgrade backup was taken separately for
+restoration after installing a verified image. The build intentionally does
+not copy the existing firewall configuration because this LEDE source uses
+firewall4 while the running device has legacy firewall packages.
+
 ## Reference implementation
 
 [`feng1126/openwrt`](https://github.com/feng1126/openwrt) at

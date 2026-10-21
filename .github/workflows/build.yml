@@ -7,6 +7,8 @@ on:
       - .github/workflows/build.yml
       - config.seed
       - patches/newifi-d2-vendor-drivers.patch
+      - local_packages/**
+      - files/**
 
 jobs:
   build:
@@ -37,6 +39,10 @@ jobs:
           git -C openwrt checkout --detach FETCH_HEAD
           git -C openwrt apply --check "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-drivers.patch"
           git -C openwrt apply "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-drivers.patch"
+          mkdir -p openwrt/package/newifi
+          cp -a "$GITHUB_WORKSPACE/local_packages/." openwrt/package/newifi/
+          mkdir -p openwrt/files
+          cp -a "$GITHUB_WORKSPACE/files/." openwrt/files/
 
       - name: Install feeds and check configuration
         working-directory: openwrt
@@ -52,7 +58,17 @@ jobs:
             CONFIG_PACKAGE_mt_wifi=y \
             CONFIG_MTK_CHIP_MT7603E_MT7612E=y \
             CONFIG_PACKAGE_luci-app-mtwifi=y \
-            CONFIG_PACKAGE_kmod-mtk-hnat=y; do
+            CONFIG_PACKAGE_kmod-mtk-hnat=y \
+            CONFIG_PACKAGE_ddnsto=y \
+            CONFIG_PACKAGE_luci-app-ddnsto=y \
+            CONFIG_PACKAGE_smartdns=y \
+            CONFIG_PACKAGE_luci-app-smartdns=y \
+            CONFIG_PACKAGE_socat=y \
+            CONFIG_PACKAGE_luci-app-socat=y \
+            CONFIG_PACKAGE_zerotier=y \
+            CONFIG_PACKAGE_luci-app-zerotier=y \
+            CONFIG_PACKAGE_luci-theme-argon=y \
+            CONFIG_PACKAGE_luci-i18n-base-zh-cn=y; do
             grep -qx "$setting" .config || { echo "Missing $setting" >&2; exit 1; }
           done
 
