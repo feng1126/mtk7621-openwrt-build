@@ -1,4 +1,4 @@
-name: Build Newifi D2 (official OpenWrt 24.10)
+name: Build Newifi D2 (official OpenWrt 22.03, Linux 5.10)
 
 on:
   workflow_dispatch:
@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/build.yml
       - config.seed
+      - patches/newifi-d2-vendor-wifi.patch
       - local_packages/**
       - files/**
 
@@ -30,12 +31,15 @@ jobs:
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
           df -h .
 
-      - name: Fetch pinned official OpenWrt 24.10 source
+      - name: Fetch pinned official OpenWrt 22.03 source
         run: |
           git init openwrt
           git -C openwrt remote add origin https://github.com/openwrt/openwrt.git
-          git -C openwrt fetch --depth=1 origin 96922957ff073a74afbc15adbbd5e978f522fd29
+          git -C openwrt fetch --depth=1 origin refs/heads/openwrt-22.03
           git -C openwrt checkout --detach FETCH_HEAD
+          test "$(git -C openwrt rev-parse HEAD)" = 4e1d1b7df0ce6fa96d7462dc883917682f428046
+          git -C openwrt apply --check "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-wifi.patch"
+          git -C openwrt apply "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-wifi.patch"
           mkdir -p openwrt/package/newifi
           cp -a "$GITHUB_WORKSPACE/local_packages/." openwrt/package/newifi/
           mkdir -p openwrt/files
@@ -52,8 +56,11 @@ jobs:
           make defconfig
           for setting in \
             CONFIG_TARGET_ramips_mt7621_DEVICE_d-team_newifi-d2=y \
-            CONFIG_PACKAGE_kmod-mt7603=y \
-            CONFIG_PACKAGE_kmod-mt76x2=y \
+            CONFIG_PACKAGE_kmod-mt7603e=y \
+            CONFIG_PACKAGE_kmod-mt76x2e=y \
+            CONFIG_PACKAGE_mt_wifi=y \
+            CONFIG_MTK_CHIP_MT7603E_MT7612E=y \
+            CONFIG_PACKAGE_luci-app-mtwifi=y \
             CONFIG_PACKAGE_firewall4=y \
             CONFIG_PACKAGE_kmod-nft-offload=y \
             CONFIG_PACKAGE_ddnsto=y \

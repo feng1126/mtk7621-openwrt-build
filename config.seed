@@ -1,8 +1,13 @@
 CONFIG_TARGET_ramips=y
 CONFIG_TARGET_ramips_mt7621=y
 CONFIG_TARGET_ramips_mt7621_DEVICE_d-team_newifi-d2=y
-CONFIG_PACKAGE_kmod-mt7603=y
-CONFIG_PACKAGE_kmod-mt76x2=y
+CONFIG_PACKAGE_kmod-mt7603e=y
+CONFIG_PACKAGE_kmod-mt76x2e=y
+CONFIG_PACKAGE_mt_wifi=y
+CONFIG_MTK_CHIP_MT7603E_MT7612E=y
+CONFIG_PACKAGE_luci-app-mtwifi=y
+# CONFIG_PACKAGE_kmod-mt7603 is not set
+# CONFIG_PACKAGE_kmod-mt76x2 is not set
 CONFIG_PACKAGE_firewall4=y
 CONFIG_PACKAGE_kmod-nft-offload=y
 CONFIG_PACKAGE_6in4=y
