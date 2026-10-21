@@ -1,0 +1,54 @@
+diff --git a/root/usr/share/firewall4/templates/ruleset.uc b/root/usr/share/firewall4/templates/ruleset.uc
+index d6333f1..e7d0f19 100644
+--- a/root/usr/share/firewall4/templates/ruleset.uc
++++ b/root/usr/share/firewall4/templates/ruleset.uc
+@@ -313,6 +313,9 @@ table inet fw4 {
+ {%   for (let redirect in fw4.redirects(`dstnat_${zone.name}`)): %}
+ 		{%+ include("redirect.uc", { fw4, redirect }) %}
+ {%   endfor %}
++{%   if (zone.masq && fw4.default_option("fullcone")): %}
++		meta nfproto ipv4 fullcone comment "!fw4: IPv4 fullcone dstnat"
++{%   endif %}
+ {%   fw4.includes('chain-append', `dstnat_${zone.name}`) %}
+ 	}
+ 
+@@ -323,7 +326,7 @@ table inet fw4 {
+ {%   for (let redirect in fw4.redirects(`srcnat_${zone.name}`)): %}
+ 		{%+ include("redirect.uc", { fw4, redirect }) %}
+ {%   endfor %}
+-{%   if (zone.masq): %}
++{%   if (zone.masq && !fw4.default_option("fullcone")): %}
+ {%    for (let saddrs in zone.masq4_src_subnets): %}
+ {%     for (let daddrs in zone.masq4_dest_subnets): %}
+ 		{%+ include("zone-masq.uc", { fw4, zone, family: 4, saddrs, daddrs }) %}
+@@ -337,6 +340,9 @@ table inet fw4 {
+ {%     endfor %}
+ {%    endfor %}
+ {%   endif %}
++{%   if (zone.masq && fw4.default_option("fullcone")): %}
++		meta nfproto ipv4 fullcone comment "!fw4: IPv4 fullcone srcnat"
++{%   endif %}
+ {%   fw4.includes('chain-append', `srcnat_${zone.name}`) %}
+ 	}
+ 
+diff --git a/root/usr/share/ucode/fw4.uc b/root/usr/share/ucode/fw4.uc
+index 47e86cd..f18aac5 100644
+--- a/root/usr/share/ucode/fw4.uc
++++ b/root/usr/share/ucode/fw4.uc
+@@ -1865,6 +1865,7 @@ return {
+ 		}
+ 
+ 		let defs = this.parse_options(data, {
++			fullcone: [ "bool", "0" ],
+ 			input: [ "policy", "drop" ],
+ 			output: [ "policy", "drop" ],
+ 			forward: [ "policy", "drop" ],
+@@ -2126,6 +2127,8 @@ return {
+ 
+ 		if (zone.masq || zone.masq6)
+ 			zone.dflags.snat = true;
++		if (zone.masq && this.state.defaults.fullcone)
++			zone.dflags.dnat = true;
+ 
+ 		if ((zone.auto_helper && !(zone.masq || zone.masq6)) || length(zone.helper)) {
+ 			zone.dflags.helper = true;

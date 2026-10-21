@@ -9,6 +9,7 @@ on:
       - patches/newifi-d2-vendor-wifi.patch
       - local_packages/**
       - files/**
+      - build_patches/**
 
 jobs:
   build:
@@ -40,6 +41,10 @@ jobs:
           test "$(git -C openwrt rev-parse HEAD)" = 4e1d1b7df0ce6fa96d7462dc883917682f428046
           git -C openwrt apply --check "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-wifi.patch"
           git -C openwrt apply "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-wifi.patch"
+          mkdir -p openwrt/package/libs/libnftnl/patches openwrt/package/network/utils/nftables/patches openwrt/package/network/config/firewall4/patches
+          cp "$GITHUB_WORKSPACE"/build_patches/libnftnl/*.patch openwrt/package/libs/libnftnl/patches/
+          cp "$GITHUB_WORKSPACE"/build_patches/nftables/*.patch openwrt/package/network/utils/nftables/patches/
+          cp "$GITHUB_WORKSPACE"/build_patches/firewall4/*.patch openwrt/package/network/config/firewall4/patches/
           mkdir -p openwrt/package/newifi
           cp -a "$GITHUB_WORKSPACE/local_packages/." openwrt/package/newifi/
           mkdir -p openwrt/files
@@ -65,6 +70,8 @@ jobs:
             CONFIG_PACKAGE_luci-app-mtwifi=y \
             CONFIG_PACKAGE_firewall4=y \
             CONFIG_PACKAGE_kmod-nft-offload=y \
+            CONFIG_PACKAGE_kmod-nft-fullcone=y \
+            CONFIG_PACKAGE_luci-app-turboacc=y \
             CONFIG_PACKAGE_ddnsto=y \
             CONFIG_PACKAGE_luci-app-ddnsto=y \
             CONFIG_PACKAGE_smartdns=y \
