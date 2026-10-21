@@ -87,21 +87,13 @@
  	pcie: pcie@1e140000 {
 --- a/target/linux/ramips/dts/mt7621_d-team_newifi-d2.dts
 +++ b/target/linux/ramips/dts/mt7621_d-team_newifi-d2.dts
-@@ -153,35 +153,21 @@
+@@ -153,36 +153,59 @@
  	nvmem-cell-names = "mac-address";
  };
  
-+&gsw {
-+	mediatek,portmap = "llllw";
-+	status = "okay";
-+};
-+
-+&hnat {
-+	mtketh-wan = "eth0.2";
-+	mtketh-ppd = "eth0.1";
-+	mtketh-lan = "eth0";
-+	mtketh-max-gmac = <1>;
-+	status = "okay";
++&gmac1 {
++	nvmem-cells = <&macaddr_factory_e006>;
++	nvmem-cell-names = "mac-address";
 +};
 +
  &switch0 {
@@ -133,10 +125,57 @@
 -			nvmem-cell-names = "mac-address";
 -		};
 -	};
+-};
 +	status = "disabled";
- };
++};
++
++&hnat {
++        mtketh-wan = "eth0.2";
++        mtketh-ppd = "eth0.1";
++        mtketh-lan = "eth0";
++	ext-devices = "wlan0","wlan1","rax0","ra0", "rai0","apclii0","apclix0", "apcli0";
++        mtketh-max-gmac = <1>;
++        status = "okay";
++};
++
++&gsw {
++	mediatek,mdio = <&mdio>;
++	mediatek,portmap = "llllw";
++	mediatek,mcm;
++	mt7530,direct-phy-access;
++
++	resets = <&rstctrl 2>;
++	reset-names = "mcm";
++
++	port5: port@5 {
++		compatible = "mediatek,mt753x-port";
++		reg = <5>;
++		phy-mode = "rgmii";
++		fixed-link {
++			speed = <1000>;
++			full-duplex;
++		};
++	};
++
++	port6: port@6 {
++		compatible = "mediatek,mt753x-port";
++		reg = <6>;
++		phy-mode = "rgmii";
++		fixed-link {
++			speed = <1000>;
++			full-duplex;
++		};
++	};
++
++	mdio-bus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
++};
++
  
  &state_default {
+ 	gpio {
 --- a/target/linux/ramips/mt7621/config-5.10
 +++ b/target/linux/ramips/mt7621/config-5.10
 @@ -185,9 +185,9 @@
