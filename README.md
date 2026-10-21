@@ -17,10 +17,12 @@ device testing before flashing.
 The image selects firewall4, nftables flow offloading, the LEDE nft-fullcone
 kernel/userspace port, and a LuCI Turbo ACC page adapted for firewall4. IPv4
 full-cone NAT is controlled by the Turbo ACC switch and is off by default.
-The LEDE HNAT driver is not yet included: it replaces the official MT7621
+Official 22.03 already has MediaTek PPE hardware flow offloading for MT7621;
+Turbo ACC exposes this through the flow-offloading hardware switch. The LEDE
+`mtkhnat.ko` driver is not included: it replaces the official MT7621
 Ethernet/switch stack and Newifi D2 device tree, so a module-only transplant
-would break LAN/WAN. Turbo ACC only shows the MediaTek HNAT option when the
-module is present. The new port still needs a successful Actions build and
+would break LAN/WAN. Turbo ACC only shows the separate MediaTek HNAT option
+when that module is present. The new port still needs a successful Actions build and
 on-device validation before flashing.
 
 The software selection includes ddnsto, SmartDNS, socat, ZeroTier, their
