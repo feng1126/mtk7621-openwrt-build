@@ -1,4 +1,4 @@
-name: Build Newifi D2 (Linux 5.10)
+name: Build Newifi D2 (official OpenWrt 24.10)
 
 on:
   workflow_dispatch:
@@ -6,7 +6,6 @@ on:
     paths:
       - .github/workflows/build.yml
       - config.seed
-      - patches/newifi-d2-vendor-drivers.patch
       - local_packages/**
       - files/**
 
@@ -31,14 +30,12 @@ jobs:
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
           df -h .
 
-      - name: Fetch pinned LEDE 5.10 source
+      - name: Fetch pinned official OpenWrt 24.10 source
         run: |
           git init openwrt
-          git -C openwrt remote add origin https://github.com/coolsnowwolf/lede.git
-          git -C openwrt fetch --depth=1 origin 07cebbcf28f61637047645c3fedc829ee9cc3688
+          git -C openwrt remote add origin https://github.com/openwrt/openwrt.git
+          git -C openwrt fetch --depth=1 origin 96922957ff073a74afbc15adbbd5e978f522fd29
           git -C openwrt checkout --detach FETCH_HEAD
-          git -C openwrt apply --check "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-drivers.patch"
-          git -C openwrt apply "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-drivers.patch"
           mkdir -p openwrt/package/newifi
           cp -a "$GITHUB_WORKSPACE/local_packages/." openwrt/package/newifi/
           mkdir -p openwrt/files
@@ -48,28 +45,23 @@ jobs:
         working-directory: openwrt
         run: |
           ./scripts/feeds update -a
-          # Prefer the CMCC3000 LuCI customization over the feed package.
+          # Prefer the custom ZeroTier forwarding UI over the feed package.
           rm -rf feeds/luci/applications/luci-app-zerotier
-          rm -rf feeds/luci/applications/luci-app-turboacc
           ./scripts/feeds install -a
           cp "$GITHUB_WORKSPACE/config.seed" .config
           make defconfig
           for setting in \
             CONFIG_TARGET_ramips_mt7621_DEVICE_d-team_newifi-d2=y \
-            CONFIG_PACKAGE_kmod-mt7603e=y \
-            CONFIG_PACKAGE_kmod-mt76x2e=y \
-            CONFIG_PACKAGE_mt_wifi=y \
-            CONFIG_MTK_CHIP_MT7603E_MT7612E=y \
-            CONFIG_PACKAGE_luci-app-mtwifi=y \
-            CONFIG_PACKAGE_kmod-mtk-hnat=y \
-            CONFIG_PACKAGE_kmod-nft-fullcone=y \
+            CONFIG_PACKAGE_kmod-mt7603=y \
+            CONFIG_PACKAGE_kmod-mt76x2=y \
+            CONFIG_PACKAGE_firewall4=y \
+            CONFIG_PACKAGE_kmod-nft-offload=y \
             CONFIG_PACKAGE_ddnsto=y \
             CONFIG_PACKAGE_luci-app-ddnsto=y \
             CONFIG_PACKAGE_smartdns=y \
             CONFIG_PACKAGE_luci-app-smartdns=y \
             CONFIG_PACKAGE_socat=y \
             CONFIG_PACKAGE_luci-app-socat=y \
-            CONFIG_PACKAGE_luci-app-turboacc=y \
             CONFIG_PACKAGE_zerotier=y \
             CONFIG_PACKAGE_luci-app-zerotier=y \
             CONFIG_PACKAGE_luci-theme-argon=y \
