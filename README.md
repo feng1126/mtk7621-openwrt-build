@@ -14,9 +14,14 @@ NAT or configuration preservation on hardware. Vendor Wi-Fi compatibility
 with this official source must be established by successful compilation and
 device testing before flashing.
 
-The image selects firewall4 and nftables flow offloading. The prior
-LEDE-specific HNAT, Turbo ACC and nft full-cone packages are not included;
-those require a separate kernel/firewall port to this official source.
+The image selects firewall4, nftables flow offloading, the LEDE nft-fullcone
+kernel/userspace port, and a LuCI Turbo ACC page adapted for firewall4. IPv4
+full-cone NAT is controlled by the Turbo ACC switch and is off by default.
+The LEDE HNAT driver is not yet included: it replaces the official MT7621
+Ethernet/switch stack and Newifi D2 device tree, so a module-only transplant
+would break LAN/WAN. Turbo ACC only shows the MediaTek HNAT option when the
+module is present. The new port still needs a successful Actions build and
+on-device validation before flashing.
 
 The software selection includes ddnsto, SmartDNS, socat, ZeroTier, their
 available LuCI pages, Chinese translations, Argon and a local
