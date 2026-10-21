@@ -48,6 +48,8 @@ jobs:
         working-directory: openwrt
         run: |
           ./scripts/feeds update -a
+          # Prefer the CMCC3000 LuCI customization over the feed package.
+          rm -rf feeds/luci/applications/luci-app-zerotier
           ./scripts/feeds install -a
           cp "$GITHUB_WORKSPACE/config.seed" .config
           make defconfig

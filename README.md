@@ -21,6 +21,8 @@ The package list follows the installed software on Newifi D2 at
 their available LuCI applications, Chinese LuCI translations, Argon,
 block mounting and 6in4. The ddnsto and socat LuCI packages are included
 in `local_packages/`; the first-boot defaults select Argon and Chinese.
+The ZeroTier LuCI package also comes from CMCC3000 and includes its
+LAN-to-ZeroTier forwarding switch.
 
 The router's live configuration contains credentials, a ZeroTier identity,
 and network-specific settings. These are **not committed or embedded in the
