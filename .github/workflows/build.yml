@@ -43,7 +43,9 @@ jobs:
           mkdir -p openwrt/package/newifi
           cp -a "$GITHUB_WORKSPACE/local_packages/." openwrt/package/newifi/
           mkdir -p openwrt/files
-          cp -a "$GITHUB_WORKSPACE/files/." openwrt/files/
+          if [ -d "$GITHUB_WORKSPACE/files" ]; then
+            cp -a "$GITHUB_WORKSPACE/files/." openwrt/files/
+          fi
 
       - name: Install feeds and check configuration
         working-directory: openwrt
