@@ -1,0 +1,14 @@
+diff --git a/target/linux/ramips/image/mt7621.mk b/target/linux/ramips/image/mt7621.mk
+index dc98fbb8..65261f3b 100644
+--- a/target/linux/ramips/image/mt7621.mk
++++ b/target/linux/ramips/image/mt7621.mk
+@@ -548,7 +548,8 @@ define Device/d-team_newifi-d2
+   DEVICE_VENDOR := Newifi
+   DEVICE_MODEL := D2
+   DEVICE_COMPAT_VERSION := 1.1
+-  DEVICE_PACKAGES := kmod-mt7603 kmod-mt76x2 kmod-usb3 \
++  DEVICE_PACKAGES := kmod-mt7603e kmod-mt76x2e mt_wifi \
++	luci-app-mtwifi kmod-mtk-hnat kmod-usb3 \
+ 	kmod-usb-ledtrig-usbport -uboot-envtools
+ endef
+ TARGET_DEVICES += d-team_newifi-d2

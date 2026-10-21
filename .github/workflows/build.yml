@@ -1,0 +1,96 @@
+name: Build Newifi D2 (Linux 5.10)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/build.yml
+      - config.seed
+      - patches/newifi-d2-vendor-drivers.patch
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bison flex gawk gcc-multilib g++-multilib \
+            gettext git libncurses-dev libssl-dev python3-distutils rsync unzip \
+            wget zlib1g-dev file
+
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+          df -h .
+
+      - name: Fetch pinned LEDE 5.10 source
+        run: |
+          git init openwrt
+          git -C openwrt remote add origin https://github.com/coolsnowwolf/lede.git
+          git -C openwrt fetch --depth=1 origin 07cebbcf28f61637047645c3fedc829ee9cc3688
+          git -C openwrt checkout --detach FETCH_HEAD
+          git -C openwrt apply --check "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-drivers.patch"
+          git -C openwrt apply "$GITHUB_WORKSPACE/patches/newifi-d2-vendor-drivers.patch"
+
+      - name: Install feeds and check configuration
+        working-directory: openwrt
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          cp "$GITHUB_WORKSPACE/config.seed" .config
+          make defconfig
+          for setting in \
+            CONFIG_TARGET_ramips_mt7621_DEVICE_d-team_newifi-d2=y \
+            CONFIG_PACKAGE_kmod-mt7603e=y \
+            CONFIG_PACKAGE_kmod-mt76x2e=y \
+            CONFIG_PACKAGE_mt_wifi=y \
+            CONFIG_MTK_CHIP_MT7603E_MT7612E=y \
+            CONFIG_PACKAGE_luci-app-mtwifi=y \
+            CONFIG_PACKAGE_kmod-mtk-hnat=y; do
+            grep -qx "$setting" .config || { echo "Missing $setting" >&2; exit 1; }
+          done
+
+      - name: Download sources
+        working-directory: openwrt
+        run: make download -j4
+
+      - name: Build firmware
+        working-directory: openwrt
+        run: |
+          if ! make -j2 V=sc > "$GITHUB_WORKSPACE/build.log" 2>&1; then
+            tail -200 "$GITHUB_WORKSPACE/build.log"
+            exit 1
+          fi
+
+      - name: Check image and checksums
+        working-directory: openwrt
+        run: |
+          shopt -s nullglob
+          images=(bin/targets/ramips/mt7621/*newifi-d2*sysupgrade.bin)
+          ((${#images[@]} > 0)) || { echo 'Newifi D2 sysupgrade image missing' >&2; exit 1; }
+          sha256sum "${images[@]}" > "$GITHUB_WORKSPACE/SHA256SUMS"
+          cat "$GITHUB_WORKSPACE/SHA256SUMS"
+
+      - name: Upload firmware
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newifi-d2-linux-5.10
+          path: |
+            openwrt/bin/targets/ramips/mt7621/*newifi-d2*sysupgrade.bin
+            openwrt/bin/targets/ramips/mt7621/*.manifest
+            SHA256SUMS
+
+      - name: Upload failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newifi-d2-build-log
+          path: build.log
+          if-no-files-found: ignore
